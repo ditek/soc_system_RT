@@ -129,12 +129,12 @@ BUILD_CONFIGS := default
 
 # This following VERSION comment indicates the version of the tool used to 
 # generate this makefile. A makefile variable is provided for VERSION as well. 
-# ACDS_VERSION: 14.1
-ACDS_VERSION := 14.1
+# ACDS_VERSION: 14.0
+ACDS_VERSION := 14.0
 
 # This following BUILD_NUMBER comment indicates the build number of the tool 
 # used to generate this makefile. 
-# BUILD_NUMBER: 186
+# BUILD_NUMBER: 200
 
 # Define path to the application ELF. 
 # It may be used by the makefile fragments so is defined before including them. 
@@ -142,7 +142,8 @@ ACDS_VERSION := 14.1
 ELF := SocNios.elf
 
 # Paths to C, C++, and assembly source files.
-C_SRCS := main.c
+C_SRCS += interrupt_handler_uart.c
+C_SRCS += main.c
 CXX_SRCS :=
 ASM_SRCS :=
 
@@ -427,7 +428,7 @@ endif
 # multiple .sopcinfo files in a Quartus project. 
 ifeq ($(JDI_FILE),)
 ifneq ($(QUARTUS_PROJECT_DIR),)
-JDI_FILE := $(firstword $(wildcard $(QUARTUS_PROJECT_DIR)/output_files/*.jdi) $(wildcard $(QUARTUS_PROJECT_DIR)/*.jdi))
+JDI_FILE := $(wildcard $(QUARTUS_PROJECT_DIR)/*.jdi)
 endif
 endif
 
@@ -1019,9 +1020,7 @@ endif # VSIM not set
 ifeq ($(SPD),)
 ifneq ($(ABS_QUARTUS_PROJECT_DIR),)
 ifneq ($(SOPC_NAME),)
-SPD_LOCATION = $(ABS_QUARTUS_PROJECT_DIR)/$(SOPC_NAME)_tb/$(SOPC_NAME)_tb/$(SOPC_NAME)_tb.spd
-LEGACY_SPD_LOCATION = $(ABS_QUARTUS_PROJECT_DIR)/$(SOPC_NAME)_tb.spd
-SPD = $(if $(wildcard $(SPD_LOCATION)),$(SPD_LOCATION),$(LEGACY_SPD_LOCATION))
+SPD := $(ABS_QUARTUS_PROJECT_DIR)/$(SOPC_NAME)_tb.spd
 endif # SOPC_NAME set
 endif # ABS_QUARTUS_PROJECT_DIR set
 endif # SPD == empty string

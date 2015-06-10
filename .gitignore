@@ -88,3 +88,4 @@ old_rtl_netlist
 /simulation
 /soc_system/synthesis
 /top/__Previews
+*.rpt

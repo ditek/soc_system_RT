@@ -107,6 +107,14 @@
          type = "String";
       }
    }
+   element uart_0.s1
+   {
+      datum baseAddress
+      {
+         value = "8192";
+         type = "String";
+      }
+   }
    element data_memory.s1
    {
       datum baseAddress
@@ -120,14 +128,6 @@
       datum baseAddress
       {
          value = "262144";
-         type = "String";
-      }
-   }
-   element uart_0.s1
-   {
-      datum baseAddress
-      {
-         value = "8192";
          type = "String";
       }
    }

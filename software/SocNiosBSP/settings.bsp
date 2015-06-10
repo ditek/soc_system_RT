@@ -2,8 +2,8 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>hal</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>05-Jun-2015 16:52:33</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1433515953320</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>10-Jun-2015 19:52:25</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1433958745310</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\Users\diaaj\Documents\Quartus\soc_system_RT\software\SocNiosBSP</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
         <SopcDesignFile>..\..\soc_system.sopcinfo</SopcDesignFile>

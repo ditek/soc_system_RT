@@ -1,4 +1,6 @@
 
+#include "system.h"
+#include <io.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -6,48 +8,164 @@
 #include <string.h>
 //#include "sys/alt_gpio.h"
 #include <sys/alt_stdio.h>
-#include "test_config.h"
-#include <system.h>
-#include <io.h>
+#include <sys/alt_irq.h>
+
+#include "interrupt_handler_uart.h"
 #include "simple_printf.h"
-#include "nios2.h"
+#include "test_config.h"
+//#include "nios2.h"
+//
+//#define HAL_PLATFORM_RESET()   NIOS2_WRITE_STATUS(0);   NIOS2_WRITE_IENABLE(0);   ((void (*) (void)) NIOS2_RESET_ADDR) ()
 
-#define HAL_PLATFORM_RESET()   NIOS2_WRITE_STATUS(0);   NIOS2_WRITE_IENABLE(0);   ((void (*) (void)) NIOS2_RESET_ADDR) ()
-
+#define UART_0_NEW_BAUD 9600
 
 #if TIME_SCALER == 0
-	#define TIME_SCALER 1 
+	#define TIME_SCALER 1
 #endif
 
-#define ADDR_CTRL				module_address+	 0
-#define ADDR_STATUS 			module_address+	 4
-#define ADDR_MEM_BASE 			module_address+	 8
-#define ADDR_MEM_SIZE 			module_address+	12
-#define ADDR_CLK_SCALER			module_address+	16
-#define ADDR_HOLD_TIME			module_address+	20
-#define ADDR_INT_A_FREQ_SCALER	module_address+	24
-#define ADDR_INT_B_FREQ_SCALER	module_address+	28
-#define ADDR_INT_C_FREQ_SCALER	module_address+	32
-#define ADDR_INT_D_FREQ_SCALER	module_address+	36
+#define CHECK_FOR_ERRORS if(error_check()) goto Error;
 
-#define CTRL_WRITE_MEM 			0
-#define CTRL_BURST 				1
-#define CTRL_RESET_CONSUMER_N 	2
-#define CTRL_RESET_PRODUCER_N 	3
+volatile int context_uart0;
+volatile uint32_t *uart = (volatile uint32_t*) UART_0_BASE;
 
+#define LINE_BUFFER_SIZE 50
+char buffer[LINE_BUFFER_SIZE];
+const char error[] = "error";
+const char unknown[] = "unknown";
 
-#define WRITE(ADDR,VAL)		IOWR(ADDR, 0, VAL); \
-							alt_printf("wrote:%x to addr %x\n",(uint32_t)VAL,(uint32_t)ADDR); \
-							if ((ret = IORD(ADDR, 0)) != VAL) \
-							{ alt_printf("ERROR:: writing: A: %x, val: %x, ret: %x \n",(uint32_t)ADDR,VAL,ret); \
-							goto fail ; }
+void start_test();
+char dump_memory();
+
+void InitUart()
+{
+	void* context_uart0_ptr = (void*) &context_uart0;
+	InitUart1(UART_0_NEW_BAUD);
+
+	alt_ic_isr_register(UART_0_IRQ_INTERRUPT_CONTROLLER_ID, UART_0_IRQ, IsrUart1, context_uart0_ptr, 0x0); // install UART1 ISR
+	alt_ic_irq_enable (UART_0_IRQ_INTERRUPT_CONTROLLER_ID, UART_0_IRQ);
+}
+
+void putc_uart0(char c)
+{
+	while ((uart[2] & (1<<6)) == 0);
+	uart[1] = c;
+	alt_printf("%c", c);
+}
+
+void putstr_uart0(char* str)
+{
+	alt_printf("%s", str);
+	char *ptr = str;
+	while (*ptr != '\0')
+	{
+	 while ((uart[2] & (1<<6)) == 0);
+	 uart[1] = *ptr;
+//	 PutUart1(*ptr);
+	 ptr++;
+	}
+}
+
+char error_check()
+{
+	if(received_word)
+	{
+		received_word = 0;
+		memset(buffer,'\0',sizeof(buffer));
+		int i=0;
+		unsigned char data;
+		do
+		{
+			data = GetUart1();
+			buffer[i++] = data;
+		}
+		while(i<LINE_BUFFER_SIZE && data != '\n');
+
+		if(strncmp(error, buffer, 5) == 0)
+		{
+			alt_printf("ERROR \n");
+			return 1;
+		}
+	}
+	return 0;
+}
 
 int main() {
-	int success = 0;
-	int fd;
-	int ret = 3;
-	uint32_t module_address = REAL_TIME_TESTER_BASE;
 
+//	uint32_t module_address = REAL_TIME_TESTER_BASE;
+char cmd;
+
+	InitUart();
+//	putstr_uart0("init\n");
+//	usleep(3000*1000);
+////	putstr_uart0("rm txt3\n");
+////	usleep(1000*1000);
+//	putstr_uart0("ls\n");
+//	usleep(1000*1000);
+//
+//	flush_rx_buffer();
+//	putstr_uart0("test\n");
+//	usleep(1000*1000);
+//	CHECK_FOR_ERRORS;
+//
+//	putstr_uart0("hello world\n");
+//	usleep(1000*1000);
+//	CHECK_FOR_ERRORS;
+//
+//	putstr_uart0("end of file\n");
+//	usleep(1000*1000);
+//	CHECK_FOR_ERRORS;
+//
+//	putstr_uart0("ls\n");
+//	usleep(1000*1000);
+
+
+
+
+	Error:
+	while(1)
+	{
+		if(!EmptyUart1())
+		{
+			cmd = GetUart1();
+			switch(cmd)
+			{
+			// 'test' command
+			case 't':
+				start_test();
+				break;
+			// 'ready' inquiry
+			case 'r':
+				PutUart1('a');		// Acknowledge
+				break;
+			// 'memory' command
+			case 'm':
+				PutUart1('a');		// Acknowledge
+//				flush_rx_buffer();
+				if(dump_memory())
+					PutUart1('s');
+				else
+					PutUart1('f');
+				break;
+			// 'configuration' commnand
+			case 'c':
+
+				break;
+			default:
+
+				break;
+			}
+		}
+		//PutUart1('a');
+		//alt_printf("test\n");
+		//usleep(1000*1000);
+	}
+	return( 0 );
+}
+
+void start_test()
+{
+	int success = 0;
+	int ret = 3;
 	int hold_cycles = F_CLK*HOLD_TIME;
 
 	#if INT_A_PERIOD > 0
@@ -65,7 +183,6 @@ int main() {
 	#if INT_D_PERIOD > 0
 		int int_D_scaler = F_CLK*INT_D_PERIOD/TIME_SCALER;
 	#endif
-
 
 	alt_printf("Starting write to mem from costum module test\n");
 //	if( ( fd = fopen( "/dev/data_memory", ( O_RDWR | O_SYNC ) ) ) == -1 ) {
@@ -123,46 +240,37 @@ int main() {
 
 	alt_printf("Finished. STATUS= %x \n",IORD(ADDR_STATUS, 0));
 	WRITE(ADDR_CTRL, 0);
-
-
-//	int dump_file;
-//	if ((dump_file = open("/home/root/dumpfile.dat", (O_RDWR | O_SYNC | O_CREAT))) == -1)
-//	{
-//		alt_printf("Failed opening dumpfile\n");
-//		goto fail;
-//	}
-//
-//
-//	int i;
-//	char buf[20] = {'\0'};
-//	for (i = 0; i<(DATA_MEMORY_SIZE_VALUE); i+=8)
-//	{
-//		memset(buf,'\0',sizeof(buf));
-//		raw_sprintf(buf,"%x%x\n",IORD(DATA_MEMORY_BASE, i), IORD(DATA_MEMORY_BASE, (i+4)));
-//		write(dump_file,buf,sizeof(buf));
-//	}
-//
-//	// clean up our memory mapping and exit
-//	close(dump_file);
-
 	success = 1;
 
-	fail:
-	if (success)
-	{
-		alt_printf("Test completed successfully \n");
-	}
-	else
-	{
-		alt_printf("Error during test\n");
-	}
+		fail:
+		if (success)
+		{
+			PutUart1('s');
+		}
+		else
+		{
+			PutUart1('f');
+		}
 
-//	close( fd );
-
-	while(1)
-	{
-		alt_printf("test\n");
-		usleep(1000000);
-	}
-	return( 0 );
+	//	close( fd );
 }
+
+char dump_memory()
+{
+	int i;
+	char buf[20] = {'\0'};
+	for (i = 0; i<(DATA_MEMORY_SIZE_VALUE); i+=8)
+	{
+		memset(buf,'\0',sizeof(buf));
+		raw_sprintf(buf,"%x%x\n",IORD_32DIRECT(DATA_MEMORY_BASE, i), IORD_32DIRECT(DATA_MEMORY_BASE, (i+4)));
+		putstr_uart0(buf);
+		//putc_uart0('\n');
+		// Give enough time for sd-card storage
+		usleep(14*1000);
+		// If anything is received before the operation completes then there's something wrong
+//		if(!EmptyUart1())
+//			return 0;
+	}
+	return 1;
+}
+

@@ -3,6 +3,34 @@
 #ifndef _test_config__H
 #define _test_config__H
 
+/***************************************************************************/
+/**************************** GENERAL DEFINES ******************************/
+/***************************************************************************/
+
+#define ADDR_CTRL				REAL_TIME_TESTER_BASE+	 0
+#define ADDR_STATUS 			REAL_TIME_TESTER_BASE+	 4
+#define ADDR_MEM_BASE 			REAL_TIME_TESTER_BASE+	 8
+#define ADDR_MEM_SIZE 			REAL_TIME_TESTER_BASE+	12
+#define ADDR_CLK_SCALER			REAL_TIME_TESTER_BASE+	16
+#define ADDR_HOLD_TIME			REAL_TIME_TESTER_BASE+	20
+#define ADDR_INT_A_FREQ_SCALER	REAL_TIME_TESTER_BASE+	24
+#define ADDR_INT_B_FREQ_SCALER	REAL_TIME_TESTER_BASE+	28
+#define ADDR_INT_C_FREQ_SCALER	REAL_TIME_TESTER_BASE+	32
+#define ADDR_INT_D_FREQ_SCALER	REAL_TIME_TESTER_BASE+	36
+
+#define CTRL_WRITE_MEM 			0
+#define CTRL_BURST 				1
+#define CTRL_RESET_CONSUMER_N 	2
+#define CTRL_RESET_PRODUCER_N 	3
+
+
+#define WRITE(ADDR,VAL)		IOWR(ADDR, 0, VAL); \
+							if ((ret = IORD(ADDR, 0)) != VAL) \
+								goto fail ;
+
+/***************************************************************************/
+/**************************** TEST CONFGURATION ****************************/
+/***************************************************************************/
 //Platform clock in MHz
 #define F_CLK			50
 
@@ -27,9 +55,6 @@
 #define INT_B_PERIOD 	10
 #define INT_C_PERIOD	10
 #define INT_D_PERIOD	10
-
-
-
 
 
 
